@@ -1,0 +1,2 @@
+# Separate Linux GPU environment. For ROCm, use the matching official build/container.
+vllm==0.10.1
