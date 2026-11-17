@@ -1,0 +1,6 @@
+{"seq_len": 16384, "depth": 0.1, "trials": 20, "baseline_hits": 20, "quantized_hits": 20, "baseline_accuracy": 1.0, "quantized_accuracy": 1.0, "delta_pct_points": 0.0, "lost": 0, "gained": 0}
+{"seq_len": 16384, "depth": 0.5, "trials": 20, "baseline_hits": 20, "quantized_hits": 20, "baseline_accuracy": 1.0, "quantized_accuracy": 1.0, "delta_pct_points": 0.0, "lost": 0, "gained": 0}
+{"seq_len": 16384, "depth": 0.9, "trials": 20, "baseline_hits": 20, "quantized_hits": 20, "baseline_accuracy": 1.0, "quantized_accuracy": 1.0, "delta_pct_points": 0.0, "lost": 0, "gained": 0}
+{"seq_len": 32752, "depth": 0.1, "trials": 20, "baseline_hits": 20, "quantized_hits": 20, "baseline_accuracy": 1.0, "quantized_accuracy": 1.0, "delta_pct_points": 0.0, "lost": 0, "gained": 0}
+{"seq_len": 32752, "depth": 0.5, "trials": 20, "baseline_hits": 20, "quantized_hits": 20, "baseline_accuracy": 1.0, "quantized_accuracy": 1.0, "delta_pct_points": 0.0, "lost": 0, "gained": 0}
+{"seq_len": 32752, "depth": 0.9, "trials": 20, "baseline_hits": 20, "quantized_hits": 20, "baseline_accuracy": 1.0, "quantized_accuracy": 1.0, "delta_pct_points": 0.0, "lost": 0, "gained": 0}
