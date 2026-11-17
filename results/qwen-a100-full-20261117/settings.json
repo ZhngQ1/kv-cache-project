@@ -1,0 +1,16 @@
+{
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "weight_dtype": "bfloat16",
+  "engine": "V0",
+  "attention_backend": "XFORMERS",
+  "lengths": [
+    512,
+    1024,
+    2048,
+    4096,
+    8192
+  ],
+  "trials_per_depth": 20,
+  "seed": 2026
+}

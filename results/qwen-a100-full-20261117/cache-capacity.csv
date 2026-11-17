@@ -1,0 +1,3 @@
+cache,gpu_blocks,kv_pool_gib_rounded
+auto,186988,34.24
+fp8_e4m3,373977,34.24
