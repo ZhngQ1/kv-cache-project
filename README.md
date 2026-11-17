@@ -37,6 +37,42 @@ Add a separate missing-answer control with ten cases at each of 512 and 4,096 to
 
 The follow-ups require changes to fixture generation and scoring beyond the current needle.py CLI. Each owner should keep the new task clearly identified and save the exact prompts or token IDs, settings, and scoring code with their results. Full accuracy is a valid outcome. Define the protocol before the main run and report all frozen cells.
 
+### GPU and environment consistency
+
+For each experiment, run the native BF16 and FP8 conditions sequentially on the same GPU in the same Colab allocation, using the same isolated environment. A100-SXM4-40GB is the validated reference GPU. B and C may use different GPU models for their respective accuracy experiments, provided each BF16/FP8 pair stays on one GPU and the hardware is recorded. Run a small paired pilot on any alternative GPU before the main sweep.
+
+If a Colab interruption leads to a different GPU or rebuilt environment, start a new run directory and rerun both cache conditions for that comparison. Preserve earlier results and identify their run separately. Cross-GPU accuracy results should be labeled by hardware. Direct latency and peak-memory comparisons require matching GPU models, software, workloads, and measurement settings.
+
+Use the following reference configuration for B's and C's retrieval experiments.
+
+| Setting | Validated reference |
+| --- | --- |
+| Model | Qwen/Qwen2.5-0.5B-Instruct |
+| Model and tokenizer revision | 7ae557604adf67be50417f59c2c2f167def9a775 |
+| Python | 3.12, in the isolated qwen-env environment |
+| vLLM | 0.10.1 |
+| PyTorch build | 2.7.1+cu126 |
+| Transformers | 4.57.1 |
+| Engine | V0, with VLLM_USE_V1=0 |
+| Attention backend | XFormers, with VLLM_ATTENTION_BACKEND=XFORMERS |
+| Model weight dtype in both conditions | bfloat16 |
+| Native KV cache | auto, following the BF16 model dtype |
+| Quantized KV cache | fp8_e4m3, with calculate_kv_scales=True |
+| Generation | Greedy, temperature=0, maximum 16 output tokens |
+| Execution | enforce_eager=True, enable_prefix_caching=False, max_num_seqs=1 |
+| GPU memory utilization | 0.90 in both conditions |
+| Engine sequence limit | Same for both conditions in a sweep, covering the longest prompt plus 16 output tokens |
+
+Within a BF16/FP8 pair, keep the prompt token IDs, trial seeds, context lengths, insertion depths, generation settings, scoring rules, and request order identical. The intended treatment is KV cache precision and its associated FP8 scale calculation. Each follow-up may define its own prompt and seed set. Freeze these after its pilot and use fresh seeds for its main evaluation. For the 32,768-token context budget, the longest prompt is 32,752 tokens when reserving 16 output tokens.
+
+Keep the GPU retrieval environment separate from the CPU requirements.txt environment. Save the following with every run.
+
+- settings.json with GPU model, model/tokenizer SHA, task version, seeds, grid, engine options, cache dtype, and scale policy.
+- The output of nvidia-smi, Python version, and pip freeze from the isolated environment, including the PyTorch CUDA build.
+- The exact evaluation script version, prompts or token IDs, per-case answers and scores, and input hashes.
+- Complete startup logs for both conditions, showing the resolved model/tokenizer revisions, weight dtype, engine, attention backend, KV dtype, and cache capacity.
+- The paired comparison summary. Use compare.py for its supported checks and review settings and startup logs for the remaining configuration details.
+
 ### Review and integration
 
 - Charles reviews B's experiment configuration and paired results.
