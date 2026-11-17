@@ -1,5 +1,7 @@
 # A100 FP16 baseline results
 
+The updated [20-repeat experiment](../charles-a100-fp16-20repeats/README.md) includes new timing summaries and figures. This directory retains the initial three-repeat pilot.
+
 This directory contains the uploaded Colab measurements and derived figures. All 36 records passed independent checks of the dense KV payload formula, the six expected lengths, and repeat IDs 0–2 for each architecture and length.
 
 The run used NVIDIA A100-SXM4-40GB, PyTorch 2.14.1+cu130, Transformers 4.57.1, and SDPA. Both randomly initialized Llama configurations use four layers, eight query heads, head dimension 32, batch size 1, and FP16. KV heads are eight for MHA and two for GQA. K/V projection parameter counts also change.
