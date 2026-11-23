@@ -3,6 +3,7 @@ import argparse
 from hashlib import sha256
 from importlib.metadata import version
 import json
+import os
 from pathlib import Path
 import platform
 import random
@@ -16,7 +17,7 @@ DEPTHS = (0.1, 0.5, 0.9)
 GEN_TOKENS = 16
 
 
-def cases(tokenizer, lengths, trials, seed):
+def cases(tokenizer, lengths, trials, seed, depths=DEPTHS):
     message = (
         "Read the archive below.\n"
         f"{MARKER}\n"
@@ -48,7 +49,7 @@ def cases(tokenizer, lengths, trials, seed):
                 )
                 filler.extend(tokenizer.encode(note, add_special_tokens=False))
             filler = filler[:filler_count]
-            for depth in DEPTHS:
+            for depth in depths:
                 offset = round(depth * filler_count)
                 ids = prefix + filler[:offset] + needle + filler[offset:] + suffix
                 assert len(ids) == length
@@ -113,6 +114,9 @@ def cpu_runner(args, tokenizer):
 
 
 def vllm_runner(args):
+    # Match the validated reference runs (V0 engine, XFormers) unless the caller overrides them.
+    os.environ.setdefault("VLLM_USE_V1", "0")
+    os.environ.setdefault("VLLM_ATTENTION_BACKEND", "XFORMERS")
     import torch
     from vllm import LLM, SamplingParams
 
@@ -148,6 +152,9 @@ def main():
     parser.add_argument("--cache", choices=["fp32", "int8", "auto", "fp8_e4m3"], required=True)
     parser.add_argument("--lengths", type=int, nargs="+", default=[512])
     parser.add_argument("--trials", type=int, default=1)
+    parser.add_argument("--depths", type=float, nargs="+", default=list(DEPTHS),
+                        help="Needle positions as fractions of the filler tokens")
+    parser.add_argument("--task", help="Optional experiment label; stored in every record only when given")
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--seed", type=int, default=226)
     parser.add_argument("--gpu-dtype", choices=["bfloat16", "float16"], default="bfloat16")
@@ -157,6 +164,8 @@ def main():
         parser.error("lengths, trials and threads must be positive")
     if len(set(args.lengths)) != len(args.lengths):
         parser.error("lengths must be unique")
+    if len(set(args.depths)) != len(args.depths) or not all(0 <= d <= 1 for d in args.depths):
+        parser.error("depths must be unique values between 0 and 1")
     tokenizer = AutoTokenizer.from_pretrained(args.model, revision=args.revision)
     if args.cache in ("fp32", "int8"):
         run, metadata = cpu_runner(args, tokenizer)
@@ -166,16 +175,19 @@ def main():
         run, metadata = vllm_runner(args)
     correct = count = 0
     with args.output.open("x") as output:
-        for ids, case in cases(tokenizer, args.lengths, args.trials, args.seed):
+        for ids, case in cases(tokenizer, args.lengths, args.trials, args.seed, args.depths):
             answer, memory = run(ids)
             hit = exact_match(answer, case["expected"])
             correct += hit
             count += 1
-            print(json.dumps(dict(
+            record = dict(
                 **case, **metadata, **memory, answer=answer, correct=hit, cache=args.cache,
                 model=args.model, revision=args.revision, seed=args.seed, max_new_tokens=GEN_TOKENS,
                 os=platform.platform(),
-            )), file=output, flush=True)
+            )
+            if args.task is not None:
+                record = {"task": args.task, **record}
+            print(json.dumps(record), file=output, flush=True)
     print(f"{args.cache}: {correct}/{count} exact matches", file=sys.stderr)
 
 

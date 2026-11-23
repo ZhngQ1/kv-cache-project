@@ -25,7 +25,7 @@ def compare(baseline, quantized):
     for key, before in baseline.items():
         after = quantized[key]
         for field in (
-            "backend", "weight_dtype", "device", "model", "revision", "resolved_revision",
+            "task", "backend", "weight_dtype", "device", "model", "revision", "resolved_revision",
             "seed", "max_new_tokens", "expected", "prompt_sha256", "os", "gpu", "torch",
             "transformers", "vllm", "threads", "attention_backend",
         ):
@@ -35,7 +35,9 @@ def compare(baseline, quantized):
         groups[key[:2]].append((before["correct"], after["correct"]))
     if len(pairs) != 1 or not pairs <= expected_pairs:
         raise ValueError("Use a single supported same-backend cache pair.")
-    for (length, depth), group in sorted(groups.items()):
+    # Cases without a needle (missing-answer control) have depth None and sort first.
+    order = lambda item: (item[0][0], item[0][1] is not None, item[0][1] or 0)
+    for (length, depth), group in sorted(groups.items(), key=order):
         n = len(group)
         hits_before = sum(before for before, _ in group)
         hits_after = sum(after for _, after in group)
