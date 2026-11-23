@@ -4,7 +4,7 @@ This course project measures how grouped-query attention (GQA) changes KV cache 
 
 ## Proposed revised team responsibilities
 
-This proposal accounts for completed work as well as remaining tasks. Replace Teammate B and Teammate C with names after the team agrees. Each member owns an experiment, writes the corresponding paper sections, prepares their presentation material, and speaks for approximately one third of the talk.
+This proposal accounts for completed work as well as remaining tasks. Replace Teammate B with a name after the team agrees. Each member owns an experiment, writes the corresponding paper sections, prepares their presentation material, and speaks for approximately one third of the talk.
 
 ### Completed work
 
@@ -15,13 +15,19 @@ Charles has completed the controlled CPU MHA/GQA baseline, the A100 FP16 benchma
 - [Primary retrieval grid](results/qwen-a100-full-20261117/README.md)
 - [Long-context extension and combined results](results/qwen-a100-long-20261117/README.md)
 
+Yuheng has completed the early-position retrieval grid and the missing-answer control. With the needle at 1% and 5% depth in prompts of 4,096 to 32,752 tokens, both cache conditions achieve 60/60 exact matches. In the missing-answer control, both conditions answer NOT FOUND on all 20 prompts without a code. On the paired prompts that contain the code, both conditions retrieve 15/20 and answer NOT FOUND on the other five, all at 512 tokens. BF16 and FP8 produce identical answers in every run.
+
+- [Missing-answer pilot](results/yuheng-a100-missing-pilot-20261123/README.md)
+- [Early-position retrieval](results/yuheng-a100-early-20261123/README.md)
+- [Missing-answer control](results/yuheng-a100-missing-20261123/README.md)
+
 ### Ownership
 
 | Owner | Experimental contribution | Paper contribution | Presentation contribution |
 | --- | --- | --- | --- |
 | Charles | Own the completed MHA/GQA measurements and shared BF16/FP8 baseline. Finalize memory figures, explain measurement boundaries, and document the existing setup. | Draft the common experimental setup and MHA/GQA methods/results. Cover GQA and MQA in related work. | Explain the research question, KV formula, controlled comparison, and measured memory savings. |
 | Teammate B | Independently reproduce a small BF16/FP8 subset, then own retrieval with plausible distractor codes. Implement the revised fixture, run both cache settings, and analyze paired outcomes. | Draft quantized-cache methods/results and the distractor experiment. Cover cache quantization and PagedAttention in related work. | Explain FP8 settings, cache capacity, and retrieval with distractors. |
-| Teammate C | Independently reproduce a small BF16/FP8 subset, then own early-position retrieval and missing-answer controls. Implement the controls, run both cache settings, and review scoring and failures. | Draft evaluation details, effective-context analysis, limitations, and a conclusion draft. Cover StreamingLLM and H₂O in related work. | Explain reliability, effective context, the ceiling effect, and limitations. |
+| Yuheng | Own the completed early-position retrieval and missing-answer control with its paired present-answer prompts. Review scoring and failures. | Draft evaluation details, early-position and missing-answer methods/results, effective-context analysis, limitations, and a conclusion draft. Cover StreamingLLM and H₂O in related work. | Explain reliability, effective context, the ceiling effect, abstention bias in the missing-answer control, and limitations. |
 
 ### B's follow-up experiment
 
@@ -29,13 +35,7 @@ Use an archive containing several named records with different six-digit codes. 
 
 Start with a 512-token pilot at 10%, 50%, and 90% depth using five trials per depth and both BF16 and FP8. Freeze the prompt and scoring after reviewing the pilot. A bounded main grid is 512, 4,096, 16,384, and 32,752 tokens, three depths, and ten fresh trials per cell, giving 120 cases per condition. Keep the existing checkpoint and runtime configuration. Label this as a separate retrieval task.
 
-### C's follow-up experiment
-
-Test the existing single-needle task at earlier positions of 1% and 5%. A bounded main grid is 4,096, 16,384, and 32,752 tokens with ten fresh trials per position, giving 60 cases per condition.
-
-Add a separate missing-answer control with ten cases at each of 512 and 4,096 tokens. Remove the target fact and explicitly instruct the model to output NOT FOUND when the answer is absent. Score exact abstention separately from retrieval accuracy. Run both cache conditions on identical control prompts. Review a small pilot before freezing the wording.
-
-The follow-ups require changes to fixture generation and scoring beyond the current needle.py CLI. Each owner should keep the new task clearly identified and save the exact prompts or token IDs, settings, and scoring code with their results. Full accuracy is a valid outcome. Define the protocol before the main run and report all frozen cells.
+B's follow-up requires changes to fixture generation and scoring beyond the current needle.py CLI. Each owner should keep the new task clearly identified and save the exact prompts or token IDs, settings, and scoring code with their results. Full accuracy is a valid outcome. Define the protocol before the main run and report all frozen cells.
 
 ### GPU and environment consistency
 
@@ -76,8 +76,8 @@ Keep the GPU retrieval environment separate from the CPU requirements.txt enviro
 ### Review and integration
 
 - Charles reviews B's experiment configuration and paired results.
-- B reviews C's prompt construction, missing-answer controls, and scoring.
-- C reviews Charles's memory calculations, figure labels, and written claims.
+- B reviews Yuheng's prompt construction, missing-answer controls, and scoring.
+- Yuheng reviews Charles's memory calculations, figure labels, and written claims.
 - Each owner contributes their own figures, methods text, result interpretation, and presentation material.
 - All three review the abstract and final conclusion, verify references, and rehearse transitions. Rotate the final integration work across the paper, figures, and presentation.
 
@@ -85,7 +85,7 @@ Keep the GPU retrieval environment separate from the CPU requirements.txt enviro
 
 | Date | Deliverable |
 | --- | --- |
-| Nov 18 | Agree on names and ownership. B and C reproduce a small subset and freeze follow-up pilots. Charles shares the completed setup and result notes. |
+| Nov 18 | Agree on names and ownership. B and Yuheng reproduce a small subset and freeze follow-up pilots. Charles shares the completed setup and result notes. |
 | Nov 19–24 | Complete the bounded follow-ups and each owner's first methods/results draft. |
 | Nov 25–28 | Cross-review data, scoring, figures, and related work. |
 | Nov 29–30 | Finalize presentation material and rehearse with approximately equal speaking time. |
@@ -108,10 +108,11 @@ python smoke_test.py
 ```
 
 - `baseline.py` measures cache bytes and prefill time for MHA and GQA.
-- `needle.py` runs token-matched retrieval cases and records per-case results.
+- `needle.py` runs token-matched retrieval cases at configurable needle depths and records per-case results.
+- `missing_answer.py` runs the missing-answer control with paired absent and present prompts.
 - `int8_cache.py` implements CPU INT8 cache storage with FP32 scales and dequantization for attention.
 - `compare.py` checks paired inputs and summarizes accuracy by prompt length and needle depth.
-- `smoke_test.py` checks the CPU retrieval pipeline offline with a random local Qwen2 fixture.
+- `smoke_test.py` checks the CPU retrieval and missing-answer pipelines offline with a random local Qwen2 fixture.
 - `cpu-baseline.jsonl` contains the 36 measured runs. The `runs/` directory is ignored by Git. Share new raw results and logs with the team after each run.
 
 ## 1. MHA vs. GQA
@@ -175,7 +176,54 @@ done
 python compare.py runs/pilot-auto.jsonl runs/pilot-fp8_e4m3.jsonl
 ```
 
-Use `--gpu-dtype float16` for both conditions if the GPU requires it. Keep both runs on the same GPU, with identical model weights, prompts, vLLM version, and generation settings. Record the resolved cache dtype, scale policy, attention backend, and KV capacity from the logs. If the backend changes with the cache setting, report the result as a comparison of two vLLM configurations. Distinguish theoretical payload and actual cache capacity from total GPU allocation, which can include a preallocated cache pool. GPU FP8 has been verified on A100 using vLLM 0.10.1, V0, and XFormers, with BF16 model weights. See the result links above. The commands in this section describe the pilot interface; the completed Colab runs also set VLLM_USE_V1=0 and VLLM_ATTENTION_BACKEND=XFORMERS in the child-process environment.
+Use `--gpu-dtype float16` for both conditions if the GPU requires it. Keep both runs on the same GPU, with identical model weights, prompts, vLLM version, and generation settings. Record the resolved cache dtype, scale policy, attention backend, and KV capacity from the logs. If the backend changes with the cache setting, report the result as a comparison of two vLLM configurations. Distinguish theoretical payload and actual cache capacity from total GPU allocation, which can include a preallocated cache pool. GPU FP8 has been verified on A100 using vLLM 0.10.1, V0, and XFormers, with BF16 model weights. See the result links above. needle.py and missing_answer.py set VLLM_USE_V1=0 and VLLM_ATTENTION_BACKEND=XFORMERS unless the environment already defines them.
+
+## 4. Early-position retrieval and missing-answer control
+
+Both follow-ups use the GPU reference configuration above. They ran on Modal with an NVIDIA A100-SXM4-40GB. Before them, a [reproduction of the Qwen pilot](results/yuheng-a100-repro-20261123/README.md) on the same platform matched all 15 prompts and answers of the original run in both cache conditions.
+
+### Early-position retrieval
+
+This experiment repeats the single-needle task with the needle at 1% and 5% of the filler tokens. The prompt text and scoring are unchanged. It uses seed 2026, so its ten trials share codes and archive text with trials 0–9 of the primary grid, and only the needle position differs.
+
+```bash
+for cache in auto fp8_e4m3; do
+  python needle.py --revision "$MODEL_REV" --cache "$cache" --gpu-dtype bfloat16 \
+    --lengths 4096 16384 32752 --depths 0.01 0.05 --trials 10 --seed 2026 --task needle-early \
+    --output "runs/early-${cache}.jsonl" > "runs/early-${cache}.log" 2>&1 || break
+done
+python compare.py runs/early-auto.jsonl runs/early-fp8_e4m3.jsonl
+```
+
+Both cache conditions achieve 60/60 exact matches. The earliest needle starts at token 69 of a 4,096-token prompt. In the 32,752-token prompts at 1% depth, the needle starts at token 356 and is followed by more than 32,000 tokens. Together with the primary grid, the same trials are retrieved at all five tested depths. Both caches support an effective context window of at least 32,752 tokens on this task, including needles near the start of the prompt. No failure boundary was observed. [Results](results/yuheng-a100-early-20261123/README.md)
+
+### Missing-answer control
+
+Each trial produces two prompts of the same length that share the synthetic archive and the instruction. The absent prompt contains no code, and the correct answer is NOT FOUND. The present prompt inserts the code at 50% depth, and the correct answer is the code. The present prompts reveal whether the instruction makes the model abstain when the answer is available. The question is:
+
+> Question: What is the archive's verification code? If the archive does not contain a verification code, reply NOT FOUND. Reply with only the code or NOT FOUND.
+
+Answers are classified as abstain (NOT FOUND in any letter case, optional final period), target_code, other_code (another six-digit number), or other. Abstention and retrieval are scored separately. The wording was frozen after a [five-trial pilot](results/yuheng-a100-missing-pilot-20261123/README.md).
+
+```bash
+python missing_answer.py --revision "$MODEL_REV" --lengths 512 4096 --trials 10 \
+  --dump-prompts runs/missing-prompts.jsonl
+for cache in auto fp8_e4m3; do
+  python missing_answer.py --revision "$MODEL_REV" --cache "$cache" --gpu-dtype bfloat16 \
+    --lengths 512 4096 --trials 10 \
+    --output "runs/missing-${cache}.jsonl" > "runs/missing-${cache}.log" 2>&1 || break
+done
+python compare.py runs/missing-auto.jsonl runs/missing-fp8_e4m3.jsonl
+```
+
+In compare.py output, rows with depth null are absent prompts and rows with depth 0.5 are present prompts.
+
+| Prompt tokens | Absent prompts | Present prompts |
+| ---: | --- | --- |
+| 512 | NOT FOUND 10/10 | code 5/10, NOT FOUND 5/10 |
+| 4,096 | NOT FOUND 10/10 | code 10/10 |
+
+Both cache conditions produce identical answers on all 40 prompts, and no answer contains an invented code. At 512 tokens the instruction leads the model to answer NOT FOUND on half of the prompts that contain the code, so perfect abstention on absent prompts partly reflects a bias toward NOT FOUND. FP8 does not change abstention or retrieval in this control. [Results](results/yuheng-a100-missing-20261123/README.md)
 
 ## Related work
 

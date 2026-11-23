@@ -1,2 +1,3 @@
 # Separate Linux GPU environment. For ROCm, use the matching official build/container.
 vllm==0.10.1
+transformers==4.57.1

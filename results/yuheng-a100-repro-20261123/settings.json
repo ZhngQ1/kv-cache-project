@@ -1,0 +1,37 @@
+{
+  "task": "single-needle (reproduction of qwen-a100-pilot-20261117)",
+  "lengths": [
+    512
+  ],
+  "depths": [
+    0.1,
+    0.5,
+    0.9
+  ],
+  "trials_per_depth": 5,
+  "seed": 226,
+  "max_model_len": 528,
+  "platform": "modal",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "tokenizer_revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "weight_dtype": "bfloat16",
+  "caches": [
+    "auto",
+    "fp8_e4m3"
+  ],
+  "scale_policy": {
+    "auto": "native",
+    "fp8_e4m3": "calculate_kv_scales=True"
+  },
+  "engine": "V0",
+  "attention_backend": "XFORMERS",
+  "enforce_eager": true,
+  "enable_prefix_caching": false,
+  "max_num_seqs": 1,
+  "gpu_memory_utilization": 0.9,
+  "max_new_tokens": 16,
+  "temperature": 0,
+  "gpu": "NVIDIA A100-SXM4-40GB",
+  "code_commit": "a7ebc90e2d82a54d3fbc82f9b6abcf15ee100f89"
+}
